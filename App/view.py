@@ -31,6 +31,8 @@ import threading
 from App import controller
 from DISClib.ADT import stack
 assert config
+import time
+import tracemalloc
 
 """
 La vista se encarga de la interacción con el usuario.
@@ -38,13 +40,41 @@ Presenta el menu de opciones  y  por cada seleccion
 hace la solicitud al controlador para ejecutar la
 operación seleccionada.
 """
+def getTime():
+    """
+    devuelve el instante tiempo de procesamiento en milisegundos
+    """
+    return float(time.perf_counter()*1000)
+
+
+def getMemory():
+    """
+    toma una muestra de la memoria alocada en instante de tiempo
+    """
+    return tracemalloc.take_snapshot()
+
+
+def deltaMemory(start_memory, stop_memory):
+    """
+    calcula la diferencia en memoria alocada del programa entre dos
+    instantes de tiempo y devuelve el resultado en bytes (ej.: 2100.0 B)
+    """
+    memory_diff = stop_memory.compare_to(start_memory, "filename")
+    delta_memory = 0.0
+
+    # suma de las diferencias en uso de memoria
+    for stat in memory_diff:
+        delta_memory = delta_memory + stat.size_diff
+    # de Byte -> kByte
+    delta_memory = delta_memory/1024.0
+    return delta_memory
 
 # ___________________________________________________
 #  Variables
 # ___________________________________________________
 
 
-servicefile = 'bus_routes_14000.csv'
+servicefile = 'bus_routes_10    000.csv'
 initialStation = None
 
 # ___________________________________________________
@@ -83,7 +113,23 @@ def optionThree(cont):
 
 
 def optionFour(cont, initialStation):
+    delta_time = -1.0
+    delta_memory = -1.0
+
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
     controller.minimumCostPaths(cont, initialStation)
+
+    stop_time = getTime()
+    stop_memory = getMemory()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+
+    print(str(delta_time) + " " + str(delta_memory))
 
 
 def optionFive(cont, destStation):
@@ -94,6 +140,13 @@ def optionFive(cont, destStation):
 
 
 def optionSix(cont, destStation):
+    delta_time = -1.0
+    delta_memory = -1.0
+
+    tracemalloc.start()
+    start_time = getTime()
+    start_memory = getMemory()
+
     path = controller.minimumCostPath(cont, destStation)
     if path is not None:
         pathlen = stack.size(path)
@@ -103,6 +156,15 @@ def optionSix(cont, destStation):
             print(stop)
     else:
         print('No hay camino')
+    
+    stop_time = getTime()
+    stop_memory = getMemory()
+    tracemalloc.stop()
+
+    delta_time = stop_time - start_time
+    delta_memory = deltaMemory(start_memory, stop_memory)
+
+    print(str(delta_time) + " " + str(delta_memory))
 
 
 def optionSeven(cont):
